@@ -1,0 +1,236 @@
+!wget https://archive.ics.uci.edu/ml/machine-learning-databases/census1990-mld/USCensus1990.data.txt
+
+!apt-get install openjdk-8-jdk-headless -qq > /dev/null
+!wget -q https://www-us.apache.org/dist/spark/spark-2.4.7/spark-2.4.7-bin-hadoop2.7.tgz
+!tar xf spark-2.4.7-bin-hadoop2.7.tgz
+!pip install -q findspark
+
+import os
+os.environ["JAVA_HOME"] = "/usr/lib/jvm/java-8-openjdk-amd64"
+os.environ["SPARK_HOME"] = "/content/spark-2.4.7-bin-hadoop2.7"
+
+import findspark
+findspark.init()
+
+from pyspark.sql import SparkSession
+spark = SparkSession.builder.appName('census').getOrCreate()
+
+df = spark.read.csv('USCensus1990.data.txt', header=True, inferSchema=True)
+df.show(5)
+
+df = df.na.drop()
+
+df.show(5)
+
+df1 = df.select(['dAge',
+                 'dAncstry1',
+                 'iCitizen',
+                 'dDepart',
+                 'iDisabl1',
+                 'iEnglish',
+                 'iFertil',
+                 'dHour89',
+                 'dIndustry',
+                 'iLang1',
+                 'iMeans',
+                 'iMilitary',
+                 'dOccup',
+                 'dPOB',
+                 'dPoverty',
+                 'dPwgt1',
+                 'dRpincome',
+                 'dPOB',
+                 'iRspouse',
+                 'iSex',
+                 'dTravtime',
+                 'dWeek89',
+                 'iYearsch'])
+df1.show(5)
+
+dfAnc = spark.read.csv('dAncstry1.csv', header=True, inferSchema=True)
+
+from pyspark.ml.feature import OneHotEncoderEstimator
+encoder = OneHotEncoderEstimator(inputCols = ['dAncstry1'], outputCols = ['ancstry_OH'])
+encoder_transformer = encoder.fit(dfAnc)
+dfAnc = encoder_transformer.transform(dfAnc)
+dfAnc.show()
+dfAnc = dfAnc.drop('Definition')
+dfAnc.show()
+
+dfInd = spark.read.csv('dIndustry.csv', header=True, inferSchema=True)
+
+encoder = OneHotEncoderEstimator(inputCols = ['dIndustry'], outputCols = ['industry_OH'])
+encoder_transformer = encoder.fit(dfInd)
+dfInd = encoder_transformer.transform(dfInd)
+dfInd.show()
+dfInd = dfInd.drop('Definition')
+dfInd.show()
+
+dfOcc = spark.read.csv('dOccup.csv', header=True, inferSchema=True)
+
+encoder = OneHotEncoderEstimator(inputCols = ['dOccup'], outputCols = ['occup_OH'])
+encoder_transformer = encoder.fit(dfOcc)
+dfOcc = encoder_transformer.transform(dfOcc)
+dfOcc.show()
+dfOcc = dfOcc.drop('Definition')
+dfOcc.show()
+
+dfPOB = spark.read.csv('dPOB.csv', header=True, inferSchema=True)
+
+encoder = OneHotEncoderEstimator(inputCols = ['dPOB'], outputCols = ['POB_OH'])
+encoder_transformer = encoder.fit(dfPOB)
+dfPOB = encoder_transformer.transform(dfPOB)
+dfPOB.show()
+dfPOB = dfPOB.drop('Definition')
+dfPOB.show()
+
+dfCitizen = spark.read.csv('iCitizen.csv', header=True, inferSchema=True)
+
+encoder = OneHotEncoderEstimator(inputCols = ['iCitizen'], outputCols = ['citizen_OH'])
+encoder_transformer = encoder.fit(dfCitizen)
+dfCitizen = encoder_transformer.transform(dfCitizen)
+dfCitizen.show()
+dfCitizen = dfCitizen.drop('Definition')
+dfCitizen.show()
+
+dfDisab = spark.read.csv('iDisabl1.csv', header=True, inferSchema=True)
+
+encoder = OneHotEncoderEstimator(inputCols = ['iDisabl1'], outputCols = ['disable_OH'])
+encoder_transformer = encoder.fit(dfDisab)
+dfDisab = encoder_transformer.transform(dfDisab)
+dfDisab.show()
+dfDisab = dfDisab.drop('Definition')
+dfDisab.show()
+
+dfLang = spark.read.csv('iLang1.csv', header=True, inferSchema=True)
+
+encoder = OneHotEncoderEstimator(inputCols = ['iLang1'], outputCols = ['lang_OH'])
+encoder_transformer = encoder.fit(dfLang)
+dfLang = encoder_transformer.transform(dfLang)
+dfLang.show()
+dfLang = dfLang.drop('Definition')
+dfLang.show()
+
+dfMeans = spark.read.csv('iMeans.csv', header=True, inferSchema=True)
+
+encoder = OneHotEncoderEstimator(inputCols = ['iMeans'], outputCols = ['means_OH'])
+encoder_transformer = encoder.fit(dfMeans)
+dfMeans = encoder_transformer.transform(dfMeans)
+dfMeans.show()
+dfMeans = dfMeans.drop('Definition')
+dfMeans.show()
+
+dfMil = spark.read.csv('iMilitary.csv', header=True, inferSchema=True)
+
+encoder = OneHotEncoderEstimator(inputCols = ['iMilitary'], outputCols = ['military_OH'])
+encoder_transformer = encoder.fit(dfMil)
+dfMil = encoder_transformer.transform(dfMil)
+dfMil.show()
+dfMil = dfMil.drop('Definition')
+dfMil.show()
+
+dfSpouse = spark.read.csv('iRspouse.csv', header=True, inferSchema=True)
+
+encoder = OneHotEncoderEstimator(inputCols = ['iRspouse'], outputCols = ['spouse_OH'])
+encoder_transformer = encoder.fit(dfSpouse)
+dfSpouse = encoder_transformer.transform(dfSpouse)
+dfSpouse.show()
+dfSpouse = dfSpouse.drop('Definition')
+dfSpouse.show()
+
+df_full = df1.join(dfAnc, on = ['dAncstry1']) \
+             .join(dfInd, on = ['dIndustry']) \
+             .join(dfOcc, on = ['dOccup']) \
+             .join(dfPOB, on = ['dPOB']) \
+             .join(dfCitizen, on = ['iCitizen']) \
+             .join(dfDisab, on = ['iDisabl1']) \
+             .join(dfLang, on = ['iLang1']) \
+             .join(dfMeans, on = ['iMeans']) \
+             .join(dfMil, on = ['iMilitary']) \
+             .join(dfSpouse, on = ['iRspouse'])
+
+df_full.show(5)
+
+df_full = df_full.drop('dAncstry1',
+                       'dIndustry',
+                       'dOccup',
+                       'dPOB',
+                       'iCitizen',
+                       'iDisabl1',
+                       'iLang1',
+                       'iMeans',
+                       'iMilitary',
+                       'iRspouse')
+
+df_full.show(5)
+
+from pyspark.ml.feature import VectorAssembler
+assembler = VectorAssembler(inputCols=df_full.columns[:], outputCol="features")
+df_full = assembler.transform(df_full)
+df_full.show(5)
+
+from pyspark.ml.clustering import KMeans
+import matplotlib.pyplot as plt
+
+#costs = []
+#for k in range(2, 25):
+  #model = KMeans(k=k).fit(df_full)
+  #costs.append(model.computeCost(df_full))
+
+#plt.plot(range(2,25), costs)
+
+#print(costs)
+
+kmeans = KMeans(k=13)
+model = kmeans.fit(df_full)
+
+predicted = model.transform(df_full)
+predicted.show(3)
+
+predicted.groupBy('prediction').count().show()
+
+centers = model.clusterCenters()
+print(centers)
+
+df_pandas = predicted.join(dfAnc, on = ['ancstry_OH']) \
+                     .join(dfInd, on = ['industry_OH']) \
+                     .join(dfOcc, on = ['occup_OH']) \
+                     .join(dfPOB, on = ['POB_OH']) \
+                     .join(dfCitizen, on = ['citizen_OH']) \
+                     .join(dfDisab, on = ['disable_OH']) \
+                     .join(dfLang, on = ['lang_OH']) \
+                     .join(dfMeans, on = ['means_OH']) \
+                     .join(dfMil, on = ['military_OH']) \
+                     .join(dfSpouse, on = ['spouse_OH'])
+df_pandas.show(5)
+
+df_pandas = df_pandas.select('dAge',
+                             'dDepart',
+                             'iEnglish',
+                             'iFertil',
+                             'dHour89',
+                             'dPoverty',
+                             'dPwgt1',
+                             'dRpincome',
+                             'iSex',
+                             'dTravtime',
+                             'dWeek89',
+                             'iYearsch',
+                             'dAncstry1',
+                             'dIndustry',
+                             'dOccup',
+                             'dPOB',
+                             'iCitizen',
+                             'iDisabl1',
+                             'iLang1',
+                             'iMeans',
+                             'iMilitary',
+                             'iRspouse',
+                             'prediction')
+
+df_pandas.show(5)
+
+df_pandas = df_pandas.toPandas()
+df_pandas.head()
+
+df_pandas.to_csv('prediction.csv')
